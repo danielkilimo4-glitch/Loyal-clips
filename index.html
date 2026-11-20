@@ -1,0 +1,435 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOYAL CLIPS STUDIO</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #090d18;
+  color: white;
+  min-height: 100vh;
+}
+
+header {
+  padding: 22px 16px;
+  background: #11182a;
+  border-bottom: 1px solid #27334b;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 25px;
+  color: #8b7cff;
+  letter-spacing: 1px;
+}
+
+header p {
+  color: #aab3c8;
+  font-size: 13px;
+  margin-top: 7px;
+}
+
+.container {
+  max-width: 850px;
+  margin: auto;
+  padding: 20px 15px 45px;
+}
+
+.card {
+  background: #141c2e;
+  border: 1px solid #293650;
+  border-radius: 15px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+h2 {
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.upload {
+  display: block;
+  border: 2px dashed #7768ef;
+  border-radius: 12px;
+  padding: 28px 15px;
+  text-align: center;
+  cursor: pointer;
+  color: #c6c0ff;
+  background: #1b2340;
+}
+
+.upload input {
+  display: none;
+}
+
+video {
+  width: 100%;
+  max-height: 430px;
+  background: black;
+  border-radius: 12px;
+  margin-top: 15px;
+}
+
+label {
+  display: block;
+  color: #c1c9dc;
+  font-size: 14px;
+  margin: 15px 0 7px;
+}
+
+input[type="number"], select {
+  width: 100%;
+  padding: 13px;
+  border-radius: 9px;
+  border: 1px solid #35425e;
+  background: #0c1322;
+  color: white;
+  font-size: 15px;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 10px;
+  background: #7867f5;
+  color: white;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background: #6250df;
+}
+
+#status {
+  color: #b8c4db;
+  font-size: 13px;
+  margin-top: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+#progress {
+  width: 100%;
+  margin-top: 12px;
+  accent-color: #8b7cff;
+}
+
+.download {
+  display: none;
+  text-align: center;
+  padding: 14px;
+  margin-top: 15px;
+  background: #123d32;
+  border-radius: 10px;
+  color: #9bffce;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+footer {
+  text-align: center;
+  color: #79869e;
+  padding: 20px;
+  font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>LOYAL CLIPS STUDIO</h1>
+  <p>Turn your videos into scroll-stopping clips.</p>
+</header>
+
+<main class="container">
+
+  <section class="card">
+    <h2>01. Upload your video</h2>
+
+    <label class="upload">
+      <span>📁 Tap here to select a video</span>
+      <p style="font-size:12px;margin-top:10px">
+        MP4, MOV, WebM and other browser-supported formats
+      </p>
+      <input type="file" id="videoInput" accept="video/*">
+    </label>
+
+    <video id="preview" controls playsinline></video>
+    <p id="videoInfo" style="margin-top:10px;color:#aab3c8;font-size:13px">
+      No video selected.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>02. Edit your clip</h2>
+
+    <label for="start">Start time (seconds)</label>
+    <input type="number" id="start" min="0" step="0.1" value="0">
+
+    <label for="end">End time (seconds)</label>
+    <input type="number" id="end" min="0" step="0.1" value="15">
+
+    <label for="format">Choose video format</label>
+    <select id="format">
+      <option value="portrait">Portrait 9:16 (TikTok / Shorts / Reels)</option>
+      <option value="square">Square 1:1</option>
+      <option value="landscape">Landscape 16:9</option>
+      <option value="original">Original dimensions</option>
+    </select>
+
+    <button id="exportBtn" disabled>✂️ Export my clip</button>
+
+    <input type="range" id="progress" min="0" max="100" value="0" disabled>
+
+    <p id="status" role="status" aria-live="polite">
+      Upload a video to get started.
+    </p>
+
+    <a id="download" class="download" download="loyal-clip.mp4">
+      ⬇ Download your finished clip
+    </a>
+  </section>
+
+</main>
+
+<footer>
+  LOYAL CLIPS STUDIO · Create. Clip. Share.
+</footer>
+
+<script type="module">
+import { FFmpeg } from
+  "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js";
+
+import { toBlobURL } from
+  "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/esm/index.js";
+
+const videoInput = document.getElementById("videoInput");
+const preview = document.getElementById("preview");
+const startInput = document.getElementById("start");
+const endInput = document.getElementById("end");
+const formatInput = document.getElementById("format");
+const exportBtn = document.getElementById("exportBtn");
+const status = document.getElementById("status");
+const download = document.getElementById("download");
+const progress = document.getElementById("progress");
+const videoInfo = document.getElementById("videoInfo");
+
+const ffmpeg = new FFmpeg();
+
+let videoFile = null;
+let videoURL = null;
+let ffmpegReady = false;
+let exporting = false;
+
+function setStatus(message) {
+  status.textContent = message;
+}
+
+function safeFilename(extension) {
+  return `loyal_clip_${Date.now()}.${extension}`;
+}
+
+videoInput.addEventListener("change", () => {
+  const file = videoInput.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("video/")) {
+    setStatus("Please select a valid video file.");
+    return;
+  }
+
+  videoFile = file;
+
+  if (videoURL) URL.revokeObjectURL(videoURL);
+
+  videoURL = URL.createObjectURL(file);
+  preview.src = videoURL;
+  download.style.display = "none";
+
+  setStatus("Video uploaded. Preparing your editor...");
+  videoInfo.textContent =
+    `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+  preview.onloadedmetadata = () => {
+    startInput.value = 0;
+    endInput.value = Math.floor(preview.duration);
+    endInput.max = preview.duration;
+
+    setStatus("Your video is ready to edit.");
+    exportBtn.disabled = false;
+  };
+
+  preview.onerror = () => {
+    setStatus("This video format could not be previewed by your browser.");
+  };
+});
+
+async function loadFFmpeg() {
+  if (ffmpegReady) return;
+
+  setStatus("Loading video processing engine. Please wait...");
+
+  const base =
+    "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+
+  await ffmpeg.load({
+    coreURL: await toBlobURL(
+      `${base}/ffmpeg-core.js`,
+      "text/javascript"
+    ),
+    wasmURL: await toBlobURL(
+      `${base}/ffmpeg-core.wasm`,
+      "application/wasm"
+    )
+  });
+
+  ffmpegReady = true;
+}
+
+ffmpeg.on("progress", ({ progress: value }) => {
+  progress.value = Math.max(
+    0,
+    Math.min(100, Math.round(value * 100))
+  );
+});
+
+exportBtn.addEventListener("click", async () => {
+  if (!videoFile || exporting) return;
+
+  const start = Number(startInput.value);
+  const end = Number(endInput.value);
+
+  if (
+    !Number.isFinite(start) ||
+    !Number.isFinite(end) ||
+    start < 0 ||
+    end <= start ||
+    end > preview.duration
+  ) {
+    setStatus("Please enter valid start and end times.");
+    return;
+  }
+
+  exporting = true;
+  exportBtn.disabled = true;
+  download.style.display = "none";
+  progress.value = 0;
+
+  let outputURL = null;
+
+  try {
+    await loadFFmpeg();
+
+    const inputName = "input_video";
+    const outputName = safeFilename("mp4");
+
+    setStatus("Preparing your video...");
+
+    await ffmpeg.writeFile(
+      inputName,
+      new Uint8Array(await videoFile.arrayBuffer())
+    );
+
+    let filters = "";
+
+    if (formatInput.value === "portrait") {
+      filters =
+        "scale=720:1280:force_original_aspect_ratio=increase," +
+        "crop=720:1280";
+    } else if (formatInput.value === "square") {
+      filters =
+        "scale=1080:1080:force_original_aspect_ratio=increase," +
+        "crop=1080:1080";
+    } else if (formatInput.value === "landscape") {
+      filters =
+        "scale=1280:720:force_original_aspect_ratio=increase," +
+        "crop=1280:720";
+    }
+
+    const args = [
+      "-ss", String(start),
+      "-i", inputName,
+      "-t", String(end - start),
+      "-map", "0:v:0",
+      "-map", "0:a?",
+      "-c:v", "libx264",
+      "-preset", "ultrafast",
+      "-crf", "23",
+      "-pix_fmt", "yuv420p",
+      "-c:a", "aac",
+      "-b:a", "128k"
+    ];
+
+    if (filters) {
+      args.push("-vf", filters);
+    }
+
+    args.push(
+      "-movflags", "+faststart",
+      outputName
+    );
+
+    setStatus("Exporting your clip. Keep this page open...");
+
+    const exitCode = await ffmpeg.exec(args);
+
+    if (exitCode !== 0) {
+      throw new Error("Video export failed.");
+    }
+
+    const data = await ffmpeg.readFile(outputName);
+
+    const blob = new Blob([data], {
+      type: "video/mp4"
+    });
+
+    outputURL = URL.createObjectURL(blob);
+
+    download.href = outputURL;
+    download.download = outputName;
+    download.style.display = "block";
+
+    setStatus("Success! Your clip is ready to download.");
+
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(outputName);
+
+  } catch (error) {
+    console.error(error);
+    if (outputURL) URL.revokeObjectURL(outputURL);
+
+    setStatus(
+      "Export failed: " +
+      (error?.message || "Please check your internet connection and try again.")
+    );
+
+  } finally {
+    exporting = false;
+    exportBtn.disabled = !videoFile;
+  }
+});
+</script>
+
+</body>
+</html>
